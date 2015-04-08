@@ -11,6 +11,7 @@ from mako.lookup import TemplateLookup
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
 from oic.utils.http_util import Redirect
+from src.service_provider.database import PamDatabase
 
 
 LOGGER = logging.getLogger("")
@@ -65,7 +66,7 @@ def opchoice(environ, start_response, clients):
     return resp(environ, start_response, **argv)
 
 
-def access_token(environ, start_response, access_token):
+def access_token_page(environ, start_response, access_token):
     resp = Response(mako_template="access_token.mako",
                     template_lookup=LOOKUP,
                     headers=[])
@@ -133,7 +134,11 @@ def application(environ, start_response):
         except Exception as ex:
             raise
         else:
-            return access_token(environ, start_response, result)
+            #save info to database
+            #TODO get local_user
+
+            DATABASE.upsert(issuer=session["op"], local_user="temp", subject_id=result['id_token']['sub'])
+            return access_token_page(environ, start_response, result['access_token'])
 
     elif path == "logout":  # After the user has pressed the logout button
         client = CLIENTS[session["op"]]
@@ -183,6 +188,15 @@ def application(environ, start_response):
             kwargs["id_token_hint"] = id_token_as_signed_jwt(client, idt, "HS256")
         resp = client.create_authn_request(session, ACR_VALUES, **kwargs)
         return resp(environ, start_response)
+    elif path == "verify_access_token":
+        local_user = query['user'][0]
+        row = DATABASE.get_row(local_user)
+
+        access_token = query['access_token'][0]
+        client = CLIENTS[row["issuer"]]
+        user_info = client.request_user_info(access_token)
+        if user_info["sub"] == row["subject_id"]:
+            pass
 
     return opchoice(environ, start_response, CLIENTS)
 
@@ -214,6 +228,7 @@ if __name__ == '__main__':
     SRV = wsgiserver.CherryPyWSGIServer(('0.0.0.0', conf.PORT),
                                         SessionMiddleware(application,
                                                           session_opts))
+    DATABASE = PamDatabase(conf.PAM_DATABASE)
 
     if conf.BASE.startswith("https"):
         from cherrypy.wsgiserver import ssl_pyopenssl

@@ -97,28 +97,30 @@ class Client(oic.Client):
                     "client_secret": self.client_secret
                 }
 
-                atresp = self.do_access_token_request(
+                access_token_response = self.do_access_token_request(
                     scope="openid", state=authresp["state"], request_args=args,
                     authn_method=self.registration_response["token_endpoint_auth_method"])
             except Exception as err:
                 logger.error("%s" % err)
                 raise
 
-            if isinstance(atresp, ErrorResponse):
-                raise OIDCError("Invalid response %s." % atresp["error"])
+            if isinstance(access_token_response, ErrorResponse):
+                raise OIDCError("Invalid response %s." % access_token_response["error"])
 
-        return atresp["access_token"]
+        return access_token_response
 
-        # inforesp = self.do_user_info_request(state=authresp["state"])
-        #
-        # if isinstance(inforesp, ErrorResponse):
-        #     raise OIDCError("Invalid response %s." % inforesp["error"])
-        #
-        # userinfo = inforesp.to_dict()
-        #
-        # logger.debug("UserInfo: %s" % inforesp)
-        #
-        # return userinfo
+    def request_user_info(self, access_token):
+        inforesp = self.do_user_info_request(**{"access_token": access_token})
+
+        if isinstance(inforesp, ErrorResponse):
+            raise OIDCError("Invalid response %s." % inforesp["error"])
+
+        userinfo = inforesp.to_dict()
+
+        logger.debug("UserInfo: %s" % inforesp)
+
+        return userinfo
+
 
 
 class OIDCClients(object):

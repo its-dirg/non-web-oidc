@@ -20,12 +20,14 @@ ME = {
     "response_types": ["code"]
 }
 
+PAM_DATABASE = "pam.db"
+
 BEHAVIOUR = {
     "response_type": "code",
     "scope": ["openid", "profile", "email", "address", "phone"],
 }
 
-ACR_VALUES = ["SAML"]
+ACR_VALUES = ["password"]
 
 # The keys in this dictionary are the OPs short userfriendly name
 # not the issuer (iss) name.
