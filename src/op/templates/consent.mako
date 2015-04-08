@@ -16,7 +16,8 @@
     <input type="hidden" name="sid" value="${sid}">
 
     <label for="nickname">Nickname</label>
-    <input type="text" id="nickname" name="access_token_nickname" autofocus>
+    <input type="text" id="nickname" name="access_token_nickname" autofocus
+           required>
 
     <input type="submit" value="Authorize">
 </form>
