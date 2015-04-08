@@ -97,6 +97,21 @@ def consent(environ, start_response):
     return _oas.consent_endpoint(**params)(environ, start_response)
 
 
+def list_access_tokens(environ, start_response):
+    _oas = environ["oic.oas"]
+    return wsgi_wrapper(environ, start_response,
+                        _oas.list_access_tokens_endpoint)
+
+
+def revoke_access_token(environ, start_response):
+    _oas = environ["oic.oas"]
+
+    params_str = get_or_post(environ)
+    params = dict(urlparse.parse_qsl(params_str))
+
+    return _oas.revoke_access_token_endpoint(**params)(environ, start_response)
+
+
 ENDPOINTS = [
     AuthorizationEndpoint(authorization),
     TokenEndpoint(token),
@@ -134,7 +149,7 @@ if __name__ == '__main__':
     renderer = MakoRenderer(LOOKUP)
     consent_page_handler = partial(renderer, "consent.mako",
                                    form_action="/consent_ok")
-    list_tokens_page_handler = partial(renderer, "list_tokens.mako")
+    list_tokens_page_handler = partial(renderer, "list_access_tokens.mako")
 
     OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, ac,
                          None, authz, verify_client, config.SYM_KEY,
@@ -187,8 +202,9 @@ if __name__ == '__main__':
          lambda environ, start_response: wsgi_wrapper(environ, start_response,
                                                       authn.verify)),
         ("/my_tokens",
-         OICProviderMiddleware(OAS, OAS.list_access_tokens_endpoint)),
+         OICProviderMiddleware(OAS, list_access_tokens)),
         ("/consent_ok", OICProviderMiddleware(OAS, consent)),
+        ("/revoke_token", OICProviderMiddleware(OAS, revoke_access_token)),
         ("/static", static_handler)
     ]
     for ep in ENDPOINTS:
