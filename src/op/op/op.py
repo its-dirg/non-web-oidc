@@ -110,19 +110,19 @@ if __name__ == '__main__':
     config = importlib.import_module(args.config)
     config.issuer = config.issuer % args.port
 
-    ac = AuthnBroker()
+    auth_broker = AuthnBroker()
     authn = UsernamePasswordMako(
         None, "login.mako", LOOKUP, config.PASSWD,
         "%s/authorization" % config.issuer)
-    ac.add("UsernamePassword", authn)
+    auth_broker.add("UsernamePassword", authn)
 
     # dealing with authorization
     authz = AuthzHandling()
 
-    OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, ac, None,
-                   authz, verify_client, config.SYM_KEY)
+    OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, auth_broker, None,
+                   authz, verify_client, config.SYM_KEY, None)
 
-    for authn in ac:
+    for authn in auth_broker:
         authn.srv = OAS
 
     # User info is a simple dictionary in this case statically defined in
