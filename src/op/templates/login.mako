@@ -1,43 +1,47 @@
-<%inherit file="root.mako" />
-<div class="header">
-    <h1><a href="/">${title}</a></h1>
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Please login</title>
+
+    <style type="text/css">
+        .container {
+            width: 100px;
+            clear: both;
+        }
+
+        .container input {
+            width: 100%;
+            clear: right;
+        }
+
+    </style>
+</head>
+
+<body>
+<div>
+    <h1>${title}</h1>
 </div>
-<div class="login_form" class="block">
+
+<div class="container">
     <form action="${action}" method="post" class="login form">
         <input type="hidden" name="query" value="${query}"/>
         <input type="hidden" name="acr_values" value="${acr}"/>
-        <table>
-            <tr>
-                <td>${login_title}</td>
-                <td><input type="text" name="login" value="${login}"/></td>
-            </tr>
-            <tr>
-                <td>${passwd_title}</td>
-                <td><input type="password" name="password"
-                value="${password}"/></td>
-            </tr>
-            <tr>
-                </td>
-                <td><input type="submit" name="form.commit"
-                        value="${submit_text}"/></td>
-            </tr>
-        </table>
+
+        <p>
+            <label for="login">${login_title}</label>
+            <input type="text" id="login" name="login" value="${login}"
+                   autofocus>
+        </p>
+
+        <p>
+            <label for="password">${passwd_title}</label>
+            <input type="password" id="password" name="password"
+                   value="${password}">
+        </p>
+
+        <input type="submit" value="${submit_text}">
     </form>
-    % if logo_uri:
-        <img src="${logo_uri}" alt="Client logo">
-    % endif
-    % if policy_uri:
-        <a href="${policy_uri}"><strong>Client&#39;s Policy</strong></a>
-    % endif
-    % if tos_uri:
-        <a href="${tos_uri}"><strong>Client&#39;s Terms of Service</strong></a>
-    % endif
 </div>
 
-<%def name="add_js()">
-    <script type="text/javascript">
-        $(document).ready(function() {
-            bookie.login.init();
-        });
-    </script>
-</%def>

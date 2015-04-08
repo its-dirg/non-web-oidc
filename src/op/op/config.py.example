@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-baseurl = "http://localhost"
+baseurl = "https://localhost"
 issuer = "%s:%%d" % baseurl
 
 keys = [
@@ -9,11 +9,13 @@ keys = [
     {"type": "EC", "crv": "P-256", "use": ["enc"]}
 ]
 
-SYM_KEY = "4sgXWGvuEEiQla"
+SYM_KEY = "SoLittleTime,Got"
 
 SERVER_CERT = "certs/localhost.crt"
 SERVER_KEY = "certs/localhost.key"
 CERT_CHAIN = None
+
+STATIC_DIR = "/tmp"
 
 PASSWD = {
     "diana": "krall",
