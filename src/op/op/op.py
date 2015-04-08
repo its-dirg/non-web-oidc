@@ -1,13 +1,16 @@
 import argparse
+from functools import partial
 import importlib
 import json
+import os
 import urlparse
 import sys
 
 from cherrypy import wsgiserver
+import cherrypy
 from cherrypy.wsgiserver import ssl_pyopenssl
 from mako.lookup import TemplateLookup
-from oic.oic.non_web_provider import NonWebProvider
+from oic.oic.non_web_provider import NonWebProvider, MakoRenderer
 from oic.oic.provider import AuthorizationEndpoint, TokenEndpoint, \
     UserinfoEndpoint, RegistrationEndpoint, EndSessionEndpoint
 from oic.utils import shelve_wrapper
@@ -15,7 +18,9 @@ from oic.utils.authn.authn_context import AuthnBroker
 from oic.utils.authn.client import verify_client
 from oic.utils.authn.user import UsernamePasswordMako
 from oic.utils.authz import AuthzHandling
-from oic.utils.http_util import wsgi_wrapper, ServiceError, BadRequest, Response
+from oic.utils.http_util import wsgi_wrapper, ServiceError, BadRequest, \
+    Response, \
+    get_or_post
 from oic.utils.keyio import keyjar_init
 from oic.utils.sdb import SessionDB
 from oic.utils.userinfo import UserInfo
@@ -34,19 +39,16 @@ class OICProviderMiddleware(object):
 
 def token(environ, start_response):
     _oas = environ["oic.oas"]
-
     return wsgi_wrapper(environ, start_response, _oas.token_endpoint)
 
 
 def authorization(environ, start_response):
     _oas = environ["oic.oas"]
-
     return wsgi_wrapper(environ, start_response, _oas.authorization_endpoint)
 
 
 def userinfo(environ, start_response):
     _oas = environ["oic.oas"]
-
     return wsgi_wrapper(environ, start_response, _oas.userinfo_endpoint)
 
 
@@ -86,12 +88,21 @@ def webfinger(environ, start_response):
     return resp(environ, start_response)
 
 
+def consent(environ, start_response):
+    _oas = environ["oic.oas"]
+
+    params_str = get_or_post(environ)
+    params = dict(urlparse.parse_qsl(params_str))
+
+    return _oas.consent_endpoint(**params)(environ, start_response)
+
+
 ENDPOINTS = [
     AuthorizationEndpoint(authorization),
     TokenEndpoint(token),
     UserinfoEndpoint(userinfo),
     RegistrationEndpoint(registration),
-    EndSessionEndpoint(endsession),
+    EndSessionEndpoint(endsession)
 ]
 
 LOOKUP = TemplateLookup(directories=["templates"], input_encoding='utf-8',
@@ -119,8 +130,15 @@ if __name__ == '__main__':
     # dealing with authorization
     authz = AuthzHandling()
 
-    OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, ac, None,
-                   authz, verify_client, config.SYM_KEY)
+    # Consent and list tokens page
+    renderer = MakoRenderer(LOOKUP)
+    consent_page_handler = partial(renderer, "consent.mako",
+                                   form_action="/consent_ok")
+    list_tokens_page_handler = partial(renderer, "list_tokens.mako")
+
+    OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, ac,
+                         None, authz, verify_client, config.SYM_KEY,
+                         consent_page_handler, list_tokens_page_handler)
 
     for authn in ac:
         authn.srv = OAS
@@ -147,15 +165,31 @@ if __name__ == '__main__':
         OAS.key_setup("static", sig={"format": "jwk", "alg": "rsa"})
     else:
         new_name = "jwks.json"
-        with open(new_name, "w") as f:
+        with open(os.path.join(config.STATIC_DIR, new_name), "w") as f:
             json.dump(jwks, f)
         OAS.jwks_uri.append("%sstatic/%s" % (OAS.baseurl, new_name))
 
-    # Setup the web server
+        # Static file handling
+    static_config = {
+        "/static": {
+            "tools.staticdir.on": True,
+            "tools.staticdir.dir": config.STATIC_DIR
+        }
+    }
+    static_handler = cherrypy.tree.mount(None, "/", config=static_config)
+
+    # Setup endpoints
     all_endpoints = [
         ("/.well-known/openid-configuration",
          OICProviderMiddleware(OAS, op_info)),
-        ("/.well-known/webfinger", OICProviderMiddleware(OAS, webfinger))
+        ("/.well-known/webfinger", OICProviderMiddleware(OAS, webfinger)),
+        ("/verify",
+         lambda environ, start_response: wsgi_wrapper(environ, start_response,
+                                                      authn.verify)),
+        ("/my_tokens",
+         OICProviderMiddleware(OAS, OAS.list_access_tokens_endpoint)),
+        ("/consent_ok", OICProviderMiddleware(OAS, consent)),
+        ("/static", static_handler)
     ]
     for ep in ENDPOINTS:
         all_endpoints.append(("/%s" % ep.etype, OICProviderMiddleware(OAS, ep)))
@@ -166,8 +200,8 @@ if __name__ == '__main__':
     https = ""
     if config.baseurl.startswith("https"):
         https = "using HTTPS"
-        SRV.ssl_adapter = ssl_pyopenssl.pyOpenSSLAdapter(
-            config.SERVER_CERT, config.SERVER_KEY, config.CERT_CHAIN)
+    SRV.ssl_adapter = ssl_pyopenssl.pyOpenSSLAdapter(
+        config.SERVER_CERT, config.SERVER_KEY, config.CERT_CHAIN)
 
     print "OC server starting listening on port:%s %s" % (args.port, https)
     try:
