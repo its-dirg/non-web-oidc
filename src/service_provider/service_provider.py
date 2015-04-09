@@ -8,7 +8,7 @@ import logging
 import argparse
 from jwkest.jws import alg2keytype
 from mako.lookup import TemplateLookup
-from oic.utils.http_util import NotFound
+from oic.utils.http_util import NotFound, Unauthorized, ServiceError
 from oic.utils.http_util import Response
 from oic.utils.http_util import Redirect
 from src.service_provider.database import PamDatabase
@@ -98,6 +98,31 @@ def id_token_as_signed_jwt(client, id_token, alg="RS256"):
     _signed_jwt = id_token.to_jwt(key=ckey, algorithm=alg)
     return _signed_jwt
 
+
+def verify_access_token(query):
+    local_user = query['user'][0]
+    row = DATABASE.get_row(local_user)
+
+    if not row:
+        error_message = "No local user (%s) found in the database."  % local_user
+        LOGGER.error(error_message)
+        return ServiceError(error_message)
+
+    access_token = query['access_token'][0]
+    client = CLIENTS[row["issuer"]]
+    user_info = client.request_user_info(access_token)
+    if user_info["sub"] == row["subject_id"]:
+        for scope in conf.BEHAVIOUR["scope"]:
+            if scope in user_info:
+                return Response()
+        error_message = "No auth claim in user info response (%s)" % user_info.keys()
+        LOGGER.error(error_message)
+        return ServiceError(error_message)
+    error_message = "Logged in user (%s) does not match the one stored in the database (%s)" % (user_info["sub"], row["subject_id"])
+    LOGGER.debug(error_message)
+    return Unauthorized(error_message)
+
+
 def application(environ, start_response):
     session = environ['beaker.session']
     path = environ.get('PATH_INFO', '').lstrip('/')
@@ -108,6 +133,9 @@ def application(environ, start_response):
         return static(environ, start_response, LOGGER, path)
 
     query = parse_qs(environ["QUERY_STRING"])
+
+    if "username" in query:
+        session['local_username'] = query['username'][0]
 
     if path == "rp":  # After having chosen which OP to authenticate at
         if "uid" in query:
@@ -134,10 +162,7 @@ def application(environ, start_response):
         except Exception as ex:
             raise
         else:
-            #save info to database
-            #TODO get local_user
-
-            DATABASE.upsert(issuer=session["op"], local_user="temp", subject_id=result['id_token']['sub'])
+            DATABASE.upsert(issuer=session["op"], local_user=session['local_username'], subject_id=result['id_token']['sub'])
             return access_token_page(environ, start_response, result['access_token'])
 
     elif path == "logout":  # After the user has pressed the logout button
@@ -189,14 +214,8 @@ def application(environ, start_response):
         resp = client.create_authn_request(session, ACR_VALUES, **kwargs)
         return resp(environ, start_response)
     elif path == "verify_access_token":
-        local_user = query['user'][0]
-        row = DATABASE.get_row(local_user)
-
-        access_token = query['access_token'][0]
-        client = CLIENTS[row["issuer"]]
-        user_info = client.request_user_info(access_token)
-        if user_info["sub"] == row["subject_id"]:
-            pass
+        response = verify_access_token(query)
+        return response(environ, start_response)
 
     return opchoice(environ, start_response, CLIENTS)
 
