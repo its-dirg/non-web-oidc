@@ -123,3 +123,4 @@ Add the following to the file `/etc/pam.d/test_app`:
 13. Run the test application again with the same access token in the file.
 14. If the token was properly revoked the test application will print
   "Not Authenticated"
+>>>>>>> Temporary merge branch 2
