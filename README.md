@@ -76,3 +76,17 @@ Add the following to the file `/etc/pam.d/test_app`:
     gcc -o test_app test_app.c -lpam -lpam_misc
     # Run
     ./test_app <username> <path to file containing access token>
+
+## Login server
+The login server is used to simulate a login service which should be connected to the application using the PAM module.
+
+### Setup
+Run the python script login_server.py located in test_application_login_service folder
+
+The script takes one required attribute which is the url to the Relying Party. The login service will use a http GET request in order to submit the username of the logged in user to the Relying Party.
+
+It is possible to specify on which port the server should use, default is port 80, by using the flag -p
+
+Example
+
+    python login_server.py -p 8000 https://localhost:8000/
