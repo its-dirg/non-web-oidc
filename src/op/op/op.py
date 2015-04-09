@@ -184,7 +184,7 @@ if __name__ == '__main__':
             json.dump(jwks, f)
         OAS.jwks_uri.append("%sstatic/%s" % (OAS.baseurl, new_name))
 
-        # Static file handling
+    # Static file handling
     static_config = {
         "/static": {
             "tools.staticdir.on": True,

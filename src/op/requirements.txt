@@ -1,2 +1,2 @@
-oic
+git+https://github.com/its-dirg/pyoidc@non-web
 cherrypy==3.2.4
