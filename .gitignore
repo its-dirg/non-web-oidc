@@ -1,5 +1,6 @@
 .idea
 *.pyc
 *config.py
+*conf.py
 client_db.db
 *jwks.json

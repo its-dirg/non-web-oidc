@@ -1,6 +1,5 @@
 PORT = 8666
-#BASE = "https://lingon.ladok.umu.se:" + str(PORT) + "/"
-BASE = "http://localhost:" + str(PORT) + "/"
+BASE = "https://localhost:" + str(PORT) + "/"
 
 # If BASE is https these has to be specified
 SERVER_CERT = "certs/server.crt"
@@ -24,7 +23,7 @@ PAM_DATABASE = "pam.db"
 
 BEHAVIOUR = {
     "response_type": "code",
-    "scope": ["openid", "profile", "email", "address", "phone"],
+    "scope": ["openid", "auth_test"],
 }
 
 ACR_VALUES = ["password"]
