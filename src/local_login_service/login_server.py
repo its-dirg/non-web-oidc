@@ -10,7 +10,7 @@ LOOKUP = TemplateLookup(directories=['templates'],
                         output_encoding='utf-8')
 
 def login_page(environ, start_response):
-    resp = Response(mako_template="list_access_tokens.mako",
+    resp = Response(mako_template="login_page.mako",
                     template_lookup=LOOKUP,
                     headers=[])
     argv = {"service_provider_url": SERVICE_PROVIDER_URL}
