@@ -134,6 +134,9 @@ def application(environ, start_response):
 
     query = parse_qs(environ["QUERY_STRING"])
 
+    if "username" in query:
+        session['local_username'] = query['username'][0]
+
     if path == "rp":  # After having chosen which OP to authenticate at
         if "uid" in query:
             client = CLIENTS.dynamic_client(query["uid"][0])
@@ -159,8 +162,7 @@ def application(environ, start_response):
         except Exception as ex:
             raise
         else:
-            #TODO get local_user
-            DATABASE.upsert(issuer=session["op"], local_user="temp", subject_id=result['id_token']['sub'])
+            DATABASE.upsert(issuer=session["op"], local_user=session['local_username'], subject_id=result['id_token']['sub'])
             return access_token_page(environ, start_response, result['access_token'])
 
     elif path == "logout":  # After the user has pressed the logout button
