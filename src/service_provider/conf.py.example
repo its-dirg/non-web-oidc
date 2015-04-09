@@ -8,14 +8,11 @@ CA_BUNDLE = None
 
 VERIFY_SSL = False
 
-# information used when registering the client, this may be the same for all OPs
+# information used when registering the client
 
 ME = {
     "application_type": "web",
-    "application_name": "idpproxy",
-    "contacts": ["ops@example.com"],
     "redirect_uris": ["%sauthz_cb" % BASE],
-    "post_logout_redirect_uris": ["%slogout_success" % BASE],
     "response_types": ["code"]
 }
 
@@ -26,46 +23,14 @@ BEHAVIOUR = {
     "scope": ["openid", "auth_test"],
 }
 
-ACR_VALUES = ["password"]
-
-# The keys in this dictionary are the OPs short userfriendly name
-# not the issuer (iss) name.
-
 CLIENTS = {
-    # The ones that support webfinger, OP discovery and client registration
-    # This is the default, any client that is not listed here is expected to
-    # support dynamic discovery and registration.
     "": {
         "client_info": ME,
         "behaviour": BEHAVIOUR
     },
-    #"oictest": {
-    #    "srv_discovery_url": "https://oictest.umdc.umu.se:8085/",
-    #    "client_info": ME,
-    #    "behaviour": BEHAVIOUR
-    #},
-    # "lingon": {
-    #     "srv_discovery_url": "https://lingon.ladok.umu.se:8092/",
-    #     "client_info": ME,
-    #     "behaviour": BEHAVIOUR,
-    #     "verify_ssl": False
-    # },
-    # Supports OP information lookup but not client registration
-    # "google": {
-    #     "srv_discovery_url": "https://accounts.google.com/",
-    #     "client_registration": {
-    #         "client_id": "xxxxxxxxx.apps.googleusercontent.com",
-    #         "client_secret": "2222222222",
-    #         "redirect_uris": ["%s/google" % BASE],
-    #     },
-    #     "behaviour": {
-    #         "response_type": "code",
-    #         "scope": ["openid",
-    #                   "https://www.googleapis.com/auth/userinfo.profile",
-    #                   "https://www.googleapis.com/auth/userinfo.email"]
-    #     },
-    #     "allow": {
-    #         "issuer_mismatch": True
-    #     }
-    # }
+    "non-web-op": {
+        "srv_discovery_url": "https://localhost",
+        "client_info": ME,
+        "behaviour": BEHAVIOUR
+    }
 }

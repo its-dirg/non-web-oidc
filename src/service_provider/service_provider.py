@@ -26,6 +26,7 @@ def setup_logger():
     LOGGER.addHandler(hdlr)
     LOGGER.setLevel(logging.DEBUG)
 
+
 setup_logger()
 
 LOOKUP = TemplateLookup(directories=['templates', 'htdocs'],
@@ -99,7 +100,7 @@ def verify_userinfo(row, user_info):
         return ServiceError(error_message)
 
     error_message = "Logged in user (%s) does not match the one stored in the database (%s)" % (
-    user_info["sub"], row["subject_id"])
+        user_info["sub"], row["subject_id"])
     LOGGER.debug(error_message)
     return Unauthorized(error_message)
 
@@ -109,7 +110,7 @@ def verify_access_token(query):
     row = DATABASE.get_row(local_user)
 
     if not row:
-        error_message = "No local user (%s) found in the database."  % local_user
+        error_message = "No local user (%s) found in the database." % local_user
         LOGGER.error(error_message)
         return ServiceError(error_message)
 
@@ -118,6 +119,7 @@ def verify_access_token(query):
     user_info = client.request_user_info(access_token)
 
     return verify_userinfo(row, user_info)
+
 
 def application(environ, start_response):
     session = environ['beaker.session']
@@ -139,7 +141,7 @@ def application(environ, start_response):
             session["op"] = query["op"][0]
 
         try:
-            resp = client.create_authn_request(session, ACR_VALUES)
+            resp = client.create_authn_request(session)
         except Exception:
             raise
         else:
@@ -155,8 +157,11 @@ def application(environ, start_response):
         except Exception as ex:
             raise
         else:
-            DATABASE.upsert(issuer=session["op"], local_user=session['local_username'], subject_id=result['id_token']['sub'])
-            return access_token_page(environ, start_response, result['access_token'])
+            DATABASE.upsert(issuer=session["op"],
+                            local_user=session['local_username'],
+                            subject_id=result['id_token']['sub'])
+            return access_token_page(environ, start_response,
+                                     result['access_token'])
     elif path == "verify_access_token":
         response = verify_access_token(query)
         return response(environ, start_response)
@@ -165,20 +170,19 @@ def application(environ, start_response):
         session['local_username'] = query['username'][0]
     return opchoice(environ, start_response, CLIENTS)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(dest="config")
     args = parser.parse_args()
     conf = importlib.import_module(args.config)
 
-    global ACR_VALUES
-    ACR_VALUES = conf.ACR_VALUES
-
     session_opts = {
         'session.type': 'memory',
         'session.cookie_expires': True,
         'session.auto': True,
-        'session.key': "{}.beaker.session.id".format(urlparse.urlparse(conf.BASE).netloc.replace(":", "."))
+        'session.key': "{}.beaker.session.id".format(
+            urlparse.urlparse(conf.BASE).netloc.replace(":", "."))
     }
 
     CLIENTS = OIDCClients(conf)
