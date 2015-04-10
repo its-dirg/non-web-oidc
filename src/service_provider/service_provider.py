@@ -8,9 +8,9 @@ from mako.lookup import TemplateLookup
 from oic.utils.http_util import NotFound, Unauthorized, ServiceError
 from oic.utils.http_util import Response
 from oic.utils.http_util import Redirect
-from src.service_provider.database import PamDatabase
-from src.service_provider.oidc import OIDCClients
-from src.service_provider.oidc import OIDCError
+from database import PamDatabase
+from oidc import OIDCClients
+from oidc import OIDCError
 from beaker.middleware import SessionMiddleware
 from cherrypy import wsgiserver
 
