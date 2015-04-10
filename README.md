@@ -19,7 +19,7 @@ be found in `src/op`. It has the following features:
     pip install -r src/op/requirements.txt
 1. Configure the provider:
   1. Copy the file `src/op/op/config.py.example` to
-`src/op/op/config.py.example`
+`src/op/op/config.py`
   1. Update the base url and paths to SSL certs, encryption/signing keys, etc.
 1. Start the provider:
     python op.py -p <port> config
@@ -63,7 +63,7 @@ It sends (using `libcurl`) the access token to the RP
 
 
 ## Login server
-The login server (located in `test_application_login_service`) can be used to
+The login server (located in `src/test_application_login_service`) can be used to
 simulate a login service which should be put in front of the RP to ensure only
 authorized users can fetch an access token.
 
