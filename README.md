@@ -16,13 +16,13 @@ be found in `src/op`. It has the following features:
 
 ### Setup
 1. Install dependencies:
-    pip install -r src/op/requirements.txt
+        pip install -r src/op/requirements.txt
 1. Configure the provider:
   1. Copy the file `src/op/op/config.py.example` to
-`src/op/op/config.py.example`
+`src/op/op/config.py`
   1. Update the base url and paths to SSL certs, encryption/signing keys, etc.
 1. Start the provider:
-    python op.py -p <port> config
+        python op.py -p <port> config
 
 ### Revoking access tokens
 A list of all valid access tokens can be viewed at the endpoint `/my_tokens`
@@ -43,8 +43,9 @@ token.
      `src/service_provider/conf.py`
   1. Update the paths to SSL certs and the port if necessary.
   1. Update the `"srv_discovery_url"` of the `"non-web-op"` in `CLIENTS` to
-     point to the base url of the provider described above.
-
+     point to the base url of the OpenID Connect Provider described above.
+1. Start the service_provider
+        python service_provider.py conf
 
 ## PAM module
 
@@ -53,17 +54,19 @@ It sends (using `libcurl`) the access token to the RP
 (described above) for authorization.
 
 ### Setup in Ubuntu
-    # Install dependencies
+In this section it is described how to set up the PAM module
+
+#### Install dependencies
     apt-get install libpam0g-dev libcurl4-openssl-dev
-    # Compile
+#### Compile
     gcc -fPIC -fno-stack-protector -c pam_oidc_authz.c
-    # Create shared library for PAM
+#### Create shared library for PAM
     mkdir /lib/security
     ld -x --shared -o /lib/security/pam_oidc_authz.so pam_oidc_authz.o `curl-config --libs`
 
 
 ## Login server
-The login server (located in `test_application_login_service`) can be used to
+The login server (located in `src/test_application_login_service`) can be used to
 simulate a login service which should be put in front of the RP to ensure only
 authorized users can fetch an access token.
 
@@ -72,7 +75,7 @@ user to select any username before entering the RP.
 
 ### Setup
 To start the login server, run the python script
-`test_application_login_service/login_server.py`.
+`src/test_application_login_service/login_server.py`.
 
 The script requires one parameter: the base url to the RP.
 The login service will use a HTTP GET request in order to send the username of
@@ -83,7 +86,7 @@ flag `-p` (if it is not specified it defaults to port 80).
 
 Example:
 
-    python login_server.py -p 8000 https://localhost:8000/
+    python login_server.py -p 8000 https://localhost:8666/
 
 
 ## Test application
@@ -92,14 +95,18 @@ A small application for testing the flow can be found in `src/test_app`.
 ### PAM configuration in Ubuntu
 Add the following to the file `/etc/pam.d/test_app`:
 
-    auth requisite pam_oidc_authz.so <url to service provider> <verify_ssl {0, 1}>
+    auth requisite pam_oidc_authz.so <service provider A.T.V endpoint> <verify_ssl {0, 1}>
     account sufficient pam_permit.so
 
-### Setup
+<service provider V.A.T endpoint>:
+This should be the url to the access token verification endpoint e.g. https://localhost:8666/verify_access_token
 
-    # Compile
+### Setup
+How to use the test application in order test the PAM module.
+
+#### Compile
     gcc -o test_app test_app.c -lpam -lpam_misc
-    # Run
+#### Run
     ./test_app <username> <path to file containing access token>
 
 

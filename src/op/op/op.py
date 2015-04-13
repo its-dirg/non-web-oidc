@@ -120,7 +120,7 @@ ENDPOINTS = [
     EndSessionEndpoint(endsession)
 ]
 
-LOOKUP = TemplateLookup(directories=["templates"], input_encoding='utf-8',
+LOOKUP = TemplateLookup(directories=["../templates"], input_encoding='utf-8',
                         output_encoding='utf-8')
 
 if __name__ == '__main__':

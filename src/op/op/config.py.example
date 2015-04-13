@@ -4,7 +4,7 @@ baseurl = "https://localhost"
 issuer = "%s:%%d" % baseurl
 
 keys = [
-    {"type": "RSA", "key": "op_keys/key.pem", "use": ["enc", "sig"]},
+    {"type": "RSA", "key": "keys/key.pem", "use": ["enc", "sig"]},
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
     {"type": "EC", "crv": "P-256", "use": ["enc"]}
 ]
