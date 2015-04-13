@@ -3,6 +3,7 @@ from functools import partial
 import importlib
 import json
 import os
+import shelve
 import urlparse
 import sys
 
@@ -13,7 +14,6 @@ from mako.lookup import TemplateLookup
 from oic.oic.non_web_provider import NonWebProvider, MakoRenderer
 from oic.oic.provider import AuthorizationEndpoint, TokenEndpoint, \
     UserinfoEndpoint, RegistrationEndpoint, EndSessionEndpoint
-from oic.utils import shelve_wrapper
 from oic.utils.authn.authn_context import AuthnBroker
 from oic.utils.authn.client import verify_client
 from oic.utils.authn.user import UsernamePasswordMako
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Client data base
-    cdb = shelve_wrapper.open("client_db", writeback=True)
+    cdb = shelve.Shelf({})
 
     sys.path.insert(0, ".")
     config = importlib.import_module(args.config)
