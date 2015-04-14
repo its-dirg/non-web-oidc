@@ -126,6 +126,8 @@ LOOKUP = TemplateLookup(directories=["../templates"], input_encoding='utf-8',
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', dest='port', default=80, type=int)
+    parser.add_argument("-b", required=True, dest="base",
+                        help="base url of the provider")
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
@@ -134,12 +136,11 @@ if __name__ == '__main__':
 
     sys.path.insert(0, ".")
     config = importlib.import_module(args.config)
-    config.issuer = config.issuer % args.port
+    baseurl = "{base}:{port}".format(base=args.base.rstrip("/"), port=args.port)
 
     ac = AuthnBroker()
-    authn = UsernamePasswordMako(
-        None, "login.mako", LOOKUP, config.PASSWD,
-        "%s/authorization" % config.issuer)
+    authn = UsernamePasswordMako(None, "login.mako", LOOKUP, config.PASSWD,
+                                 "%s/authorization" % baseurl)
     ac.add("UsernamePassword", authn)
 
     # dealing with authorization
@@ -151,7 +152,7 @@ if __name__ == '__main__':
                                    form_action="/consent_ok")
     list_tokens_page_handler = partial(renderer, "list_access_tokens.mako")
 
-    OAS = NonWebProvider(config.issuer, SessionDB(config.baseurl), cdb, ac,
+    OAS = NonWebProvider(baseurl, SessionDB(baseurl), cdb, ac,
                          None, authz, verify_client, config.SYM_KEY,
                          consent_page_handler, list_tokens_page_handler)
 
@@ -161,18 +162,8 @@ if __name__ == '__main__':
     # User info is a simple dictionary in this case statically defined in
     # the configuration file
     OAS.userinfo = UserInfo(config.USERDB)
-
     OAS.endpoints = ENDPOINTS
-
-    if args.port == 80:
-        OAS.baseurl = config.baseurl
-    else:
-        if config.baseurl.endswith("/"):
-            config.baseurl = config.baseurl[:-1]
-        OAS.baseurl = "%s:%d" % (config.baseurl, args.port)
-
-    if not OAS.baseurl.endswith("/"):
-        OAS.baseurl += "/"
+    OAS.baseurl = baseurl
 
     try:
         jwks = keyjar_init(OAS, config.keys, kid_template="op%d")
@@ -182,7 +173,7 @@ if __name__ == '__main__':
         new_name = "jwks.json"
         with open(os.path.join(config.STATIC_DIR, new_name), "w") as f:
             json.dump(jwks, f)
-        OAS.jwks_uri.append("%sstatic/%s" % (OAS.baseurl, new_name))
+        OAS.jwks_uri.append("%s/static/%s" % (OAS.baseurl, new_name))
 
     # Static file handling
     static_config = {
@@ -214,7 +205,7 @@ if __name__ == '__main__':
     SRV = wsgiserver.CherryPyWSGIServer(('0.0.0.0', args.port), d)
 
     https = ""
-    if config.baseurl.startswith("https"):
+    if baseurl.startswith("https"):
         https = "using HTTPS"
     SRV.ssl_adapter = ssl_pyopenssl.pyOpenSSLAdapter(
         config.SERVER_CERT, config.SERVER_KEY, config.CERT_CHAIN)
