@@ -173,33 +173,53 @@ def application(environ, start_response):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("-b", required=True, dest="base",
+                        help="base url of the service provider")
+    parser.add_argument("-p", dest="port", default=8090,
+                        help="port of the service provider", type=int)
+    parser.add_argument("--provider", dest="provider",
+                        help="issuer url to non web OpenID Connect provider")
     parser.add_argument(dest="config")
     args = parser.parse_args()
     conf = importlib.import_module(args.config)
+
+    args.base = "{base}:{port}".format(base=args.base.rstrip("/"), port=args.port)
+    if not args.base.endswith("/"):
+        args.base += "/"
+
+    conf.ME["redirect_uris"] = [
+        url.format(base=args.base) for url in conf.ME["redirect_uris"]]
+
+    if args.provider:
+        conf.CLIENTS["non-web-op"] = {
+            "srv_discovery_url": args.provider,
+            "client_info": conf.ME,
+            "behaviour": conf.BEHAVIOUR
+    }
 
     session_opts = {
         'session.type': 'memory',
         'session.cookie_expires': True,
         'session.auto': True,
         'session.key': "{}.beaker.session.id".format(
-            urlparse.urlparse(conf.BASE).netloc.replace(":", "."))
+            urlparse.urlparse(args.base).netloc.replace(":", "."))
     }
 
     CLIENTS = OIDCClients(conf)
 
-    SRV = wsgiserver.CherryPyWSGIServer(('0.0.0.0', conf.PORT),
+    SRV = wsgiserver.CherryPyWSGIServer(('0.0.0.0', args.port),
                                         SessionMiddleware(application,
                                                           session_opts))
     DATABASE = PamDatabase(conf.PAM_DATABASE)
 
-    if conf.BASE.startswith("https"):
+    if args.base.startswith("https"):
         from cherrypy.wsgiserver import ssl_pyopenssl
 
         SRV.ssl_adapter = ssl_pyopenssl.pyOpenSSLAdapter(
             conf.SERVER_CERT, conf.SERVER_KEY, conf.CA_BUNDLE)
 
-    LOGGER.info("RP server starting listening on port:%s" % conf.PORT)
-    print "RP server starting listening on port:%s" % conf.PORT
+    LOGGER.info("RP server starting listening on port:%s" % args.port)
+    print "RP server starting listening on port:%s" % args.port
     try:
         SRV.start()
     except KeyboardInterrupt:

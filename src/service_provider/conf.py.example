@@ -1,7 +1,4 @@
-PORT = 8666
-BASE = "https://localhost:" + str(PORT) + "/"
-
-# If BASE is https these has to be specified
+# If https is to be used these has to be specified
 SERVER_CERT = "certs/server.crt"
 SERVER_KEY = "certs/server.key"
 CA_BUNDLE = None
@@ -28,9 +25,4 @@ CLIENTS = {
         "client_info": ME,
         "behaviour": BEHAVIOUR
     },
-    "non-web-op": {
-        "srv_discovery_url": "https://localhost",
-        "client_info": ME,
-        "behaviour": BEHAVIOUR
-    }
 }
