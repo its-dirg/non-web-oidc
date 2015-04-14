@@ -33,7 +33,7 @@ if __name__ == '__main__':
     SRV = wsgiserver.CherryPyWSGIServer(('0.0.0.0', args.port),
                                         SessionMiddleware(application))
 
-    print "RP server starting listening on port:%s" % args.port
+    print "Login server starting listening on port:%s" % args.port
     try:
         SRV.start()
     except KeyboardInterrupt:
