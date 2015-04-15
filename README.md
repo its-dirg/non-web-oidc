@@ -111,11 +111,29 @@ How to use the test application in order test the PAM module.
 
 
 ## Testing it all
+
+### Docker setup
+The OP, RP and login server can be automatically started in a Docker container.
+See the Dockerfile, with an example Docker Compose file
+https://github.com/its-dirg/docker/tree/master/non-web-oidc.
+
+After building the image, start a Docker container:
+    
+    docker run -p 8080:8080 -p 8090:8090 -p 9000:9000 -e HOST_IP=<host IP> <image_name>
+    
+The exposed ports are 8080 for the OP, 8090 for the RP and 9000 for the
+example login server. And the environment variable `HOST_IP` must be the IP
+address for the host computer (outside Docker).
+
+To test the flow and get an access token, browse to http://<host IP>:9000 and
+follow the guide below from step 4. 
+
+### Manual setup
 1. Start the provider.
 2. Start the RP.
 3. Start the login server and browse to it.
 4. Enter a username and submit.
-5. Click the blue button "Start" at the RP to use the default provider.
+5. Click the blue button "Start" at the RP to use the default non-web provider.
 6. Login at the provider using any of user-password pairs defined in `PASSWD`
   in `src/op/op/conf.py`, e.g. user "upper" with password "crust".
 7. Enter a new nickname for the access token, e.g. "test1".
